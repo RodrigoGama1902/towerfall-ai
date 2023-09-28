@@ -3,6 +3,8 @@ from enum import Enum
 
 import random
 
+from typing import Any
+
 class Tile(Enum):
 
     EMPTY = '  '
@@ -12,10 +14,10 @@ class Tile(Enum):
     PATHFLOOR = '\u2593\u2593'
     PATHWALL = '\u2591\u2591'
     PATHCORNER = '\u2592\u2592'
-    PATHUP = 2
-    PATHDOWN = 3
-    PATHLEFT = 4
-    PATHRIGHT = 5
+    PATHUP = "^^"
+    PATHDOWN = "vv"
+    PATHLEFT = "<<"
+    PATHRIGHT = ">>"
 
 class Grid:
 
@@ -29,6 +31,9 @@ class Grid:
     def set_tile(self, x, y, tile):
         self._tiles[x][y] = tile
 
+    def get_tile(self, x, y):
+        return self._tiles[x][y]
+    
     @staticmethod
     def _get_tiles(grid_data):
 
@@ -36,14 +41,21 @@ class Grid:
         for i in range(len(grid_data)):
             tiles.append([])
             for j in range(len(grid_data[0])):
-                match grid_data[i][j]:
-                    case 0:
+
+                match str(grid_data[i][j]):
+                    case "0":
                         tiles[i].append(Tile.EMPTY)
-                    case 1:
+                    case "1":
                         tiles[i].append(Tile.WALL)
+                    case "o":
+                        tiles[i].append(Tile.PATHORIGIN)
+                    case "x":
+                        tiles[i].append(Tile.PATHTARGET)
+                    case ">":
+                        tiles[i].append(Tile.PATHUP)
         return tiles
         
-    def __eq__(self, __value: object) -> bool:
+    def __eq__(self, __value : Any) -> bool:
         return self._tiles == __value._tiles
 
     def __repr__(self) -> str:
@@ -92,15 +104,18 @@ class Grid:
 
 class PathFinder:
 
-    _grid : Grid = None
+    _grid : Grid
 
-    _last_target_position : tuple[int, int] = None
-    _last_origin_position : tuple[int, int] = None
+    _last_target_position : tuple[int, int]
+    _last_origin_position : tuple[int, int]
 
-    last_displayed_grid : Grid = None
+    last_displayed_grid : Grid
 
     def __init__(self):
-        pass
+        self._last_target_position = (0, 0)
+        self._last_origin_position = (0, 0)
+        self._grid = Grid([])
+        self.last_displayed_grid = Grid([])
 
     def set_random_target(self):
         valid_positions = [(x,y) for x in range(len(self._grid._tiles)) for y in range(len(self._grid._tiles[0])) if self._grid._tiles[x][y] == Tile.EMPTY]
@@ -156,7 +171,25 @@ class PathFinder:
                         self._grid.set_tile(i, j, Tile.PATHCORNER)
                         continue
 
-                    
+    def _generate_base_path(self):
+
+        if not self._last_origin_position or not self._last_target_position:
+            return
+
+        origin_x, origin_y = self._last_origin_position
+        target_x, target_y = self._last_target_position
+
+        nearest_target_floor = None
+        current_y = target_y
+
+        while not nearest_target_floor:
+            tile = self._grid.get_tile(target_x, current_y)
+            if tile == Tile.PATHFLOOR:
+                nearest_target_floor = (target_x, current_y)
+            current_y += 1
+
+        self._grid.set_tile(*nearest_target_floor, Tile.PATHUP)
+             
     def update_grid(self, grid_data):
         self._grid = Grid(grid_data)
 
@@ -164,8 +197,37 @@ class PathFinder:
         self._generate_corner_climb_areas()
         self._generate_wall_climb_areas()
 
+        #self._generate_base_path()
+
     def display(self):
 
         if not self.last_displayed_grid or (not self._grid == self.last_displayed_grid):
             print(self._grid)
             self.last_displayed_grid = self._grid
+
+def main():
+
+    TEST_GRID = [
+        [1, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 1, 0, 0, 1],
+        [1, 0, 0, 0, 0, 1, 0, 0, 1],
+        [1, 0, 0, 0, 0, 1, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 1],
+    ]
+
+    pathfinder = PathFinder()
+    pathfinder.update_grid(TEST_GRID)
+    pathfinder.set_origin(1, 1)
+    pathfinder.set_target(3, 7)
+    pathfinder.display()
+
+
+if __name__ == "__main__":
+    main()
