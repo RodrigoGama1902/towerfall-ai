@@ -157,10 +157,10 @@ class TestAgent:
 
 
         arrow_distance = self._get_distance_to(arrow['pos']['x'], arrow['pos']['y'])
-        if arrow_distance > 25 and arrow_distance < 100 and my_state["arrows"]: 
+        if arrow_distance > 25 and arrow_distance < 80 and my_state["arrows"]: 
             self._log_action('shooting towards arrow')
             self._go_towards_point(arrow['pos']['x'], arrow['pos']['y'], use_dash= False)
-            self._shoot(fail_chance=3)
+            self._shoot(fail_chance=15)
             return self.send_actions()
         
         if arrow_distance < 25:
