@@ -44,7 +44,7 @@ class Grid:
         return tiles
         
     def __eq__(self, __value: object) -> bool:
-        return self._grid_data == __value._grid_data
+        return self._tiles == __value._tiles
 
     def __repr__(self) -> str:
         string = ""

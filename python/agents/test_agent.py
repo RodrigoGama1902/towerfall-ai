@@ -142,6 +142,7 @@ class TestAgent:
     enemy_pos = enemy_state['pos']
     enemy_distance = self._get_distance_to(enemy_pos['x'], enemy_pos['y'])
 
+    self.pathfinder.update_grid(self.state_scenario['grid'])
     self.pathfinder.set_target(int(enemy_pos['x'] / self.state_scenario['cellSize']), int(enemy_pos['y'] / self.state_scenario['cellSize']))
     self.pathfinder.set_origin(int(self.my_pos['x'] / self.state_scenario['cellSize']), int(self.my_pos['y'] / self.state_scenario['cellSize']))
     self.pathfinder.display()
