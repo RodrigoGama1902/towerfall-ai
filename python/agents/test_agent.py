@@ -132,7 +132,7 @@ class TestAgent:
     enemy_pos = enemy_state['pos']
     enemy_distance = self._get_distance_to(enemy_pos['x'], enemy_pos['y'])
     
-    if my_state["arrows"]:
+    if not my_state["arrows"]:
       if enemy_distance < 30 and enemy_pos['y'] >= self.my_pos['y'] + 10 and self._is_heading_towards_me(
         enemy_pos['x'], 
         enemy_pos['y'], 

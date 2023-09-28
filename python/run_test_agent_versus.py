@@ -11,7 +11,7 @@ Two agents playing a 1 versus 1 match.
 def main():
   # Creates or reuse a Towerfall game.
   towerfall = Towerfall(
-    verbose = 1,
+    verbose = 0,
     config = dict(
       mode='versus',
       level='',
@@ -31,7 +31,7 @@ def main():
   agents.append(SimpleAgent(connections[0]))
 
   connections.append(towerfall.join(timeout=10, verbose=0))
-  agents.append(TestAgent(connections[1]))
+  agents.append(SimpleAgent(connections[1]))
 
 
   while True:
