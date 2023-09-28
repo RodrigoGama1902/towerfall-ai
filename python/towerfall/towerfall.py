@@ -12,7 +12,7 @@ from psutil import Popen
 
 from .connection import Connection
 
-_DEFAULT_STEAM_PATH_WINDOWS = 'C:/Program Files (x86)/Steam/steamapps/common/TowerFall'
+_DEFAULT_STEAM_PATH_WINDOWS = 'J:\SteamLibrary\steamapps\common\TowerFall'
 _ENV_TOWERFALL_PATH = 'TOWERFALL_PATH'
 
 class TowerfallError(Exception):

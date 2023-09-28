@@ -14,7 +14,7 @@ def main():
     verbose = 1,
     config = dict(
       mode='versus',
-      level='3',
+      level='',
       fps=60,
       agentTimeout='00:00:02',
       agents=[
@@ -28,7 +28,7 @@ def main():
 
   # add one SimpleAgent and one TestAgent
   connections.append(towerfall.join(timeout=10, verbose=0))
-  agents.append(TestAgent(connections[0]))
+  agents.append(SimpleAgent(connections[0]))
 
   connections.append(towerfall.join(timeout=10, verbose=0))
   agents.append(TestAgent(connections[1]))

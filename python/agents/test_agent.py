@@ -2,6 +2,8 @@ import logging
 import random
 import math
 
+from pprint import pprint
+
 from typing import Any, Mapping
 
 from towerfall import Connection
@@ -143,7 +145,7 @@ class TestAgent:
      
     # Defend against shooting arrows
     for arrow in arrows:
-      if arrow["state"] == "shooting":     
+      if arrow["state"] == "shooting" or arrow["state"] == "gravity":     
         if not self._is_heading_towards_me(
           arrow['pos']['x'], 
           arrow['pos']['y'], 
@@ -173,10 +175,6 @@ class TestAgent:
         self._log_action('dashing towards arrow')
         self._go_towards_point(arrow['pos']['x'], arrow['pos']['y'], use_dash= True)
 
-        #if random.randint(0, 1) == 0:
-        #  print("shotting arrow against arrow")
-        #  self.press('s')
-
         return self.send_actions()
         
 
@@ -185,9 +183,13 @@ class TestAgent:
       self._go_towards_point(enemy_pos['x'], enemy_pos['y'], allow_vertical= False)
 
       if enemy_distance < 100:
+
         self._log_action('shooting enemy')
-        if random.randint(0, 10) == 0:
-            self.press('s')
+        if self.is_clear_path(enemy_pos['x'], enemy_pos['y']):
+          if random.randint(0, 3) == 0:
+              self.press('s')
+        else:
+          self._log_action('blocked')
 
     else:
       closest_stuck_arrow = self._find_closest_stuck_arrow(arrows)
@@ -313,6 +315,49 @@ class TestAgent:
 
           if arrow_distance < 100:
               return arrow
+
+  def is_clear_path(self, target_x, target_y):
+
+    cellSize = self.state_scenario['cellSize'] # used to convert from world coordinates to grid coordinates
+    scenario_grid = self.state_scenario['grid']
+
+    x1, y1 = int(self.my_pos['x'] / cellSize), int(self.my_pos['y'] / cellSize) +1 # +1 to consider one block to keep head height
+    x2, y2 = int(target_x / cellSize), int(target_y / cellSize) +1 
+
+    # Calculate the direction vector from the enemy to the player
+    dx = x2 - x1
+    dy = y2 - y1
+
+    # Calculate the length of the direction vector
+    length = math.sqrt(dx ** 2 + dy ** 2)
+
+    # Normalize the direction vector
+    if length == 0:
+        return False
+
+    dx /= length
+    dy /= length
+
+    # Initialize the ray's starting position
+    x, y = x1, y1
+
+    # Iterate along the ray from the enemy to the player
+    while math.sqrt((x - x1) ** 2 + (y - y1) ** 2) < length:
+        # Check if the current cell is an obstacle
+
+        if x < 0 or x >= len(scenario_grid):
+            return False
+        if y < 0 or y >= len(scenario_grid[0]):
+            return False
+        if scenario_grid[int(x)][int(y)] == 1:
+            return False  # There is a collision, not a clear path
+        # Move the ray to the next cell
+        x += dx
+        y += dy
+
+    # If the loop finishes, there is a clear path
+    return True
+
 
   def press(self, b):
     self.pressed.add(b)

@@ -1,4 +1,4 @@
-from agents import SimpleAgent
+from agents import TestAgent
 from common.logging_options import default_logging
 from towerfall import Towerfall
 
@@ -15,14 +15,14 @@ def main():
     verbose = 1,
     config = dict(
       mode='versus',
-      level='3',
+      level='8',
       fps=60,
       agentTimeout='00:00:02',
       agents=[
-        dict(type='human', archer='yellow', team='blue'),
-        dict(type='remote', archer='purple', team='blue'),
-        dict(type='remote', archer='orange', team='red'),
-        dict(type='remote', archer='red', team='red')],
+        dict(type='human', archer='orange', team='red'),
+        dict(type='remote', archer='white', team='blue'),]
+        #dict(type='remote', archer='green', team='blue'),
+        #dict(type='remote', archer='red', team='blue')],
     )
   )
 
@@ -30,8 +30,8 @@ def main():
   agents = []
   remote_agents = sum(1 for agent in towerfall.config['agents'] if agent['type'] != 'human')
   for i in range(remote_agents):
-    connections.append(towerfall.join(timeout=20, verbose=1))
-    agents.append(SimpleAgent(connections[i]))
+    connections.append(towerfall.join(timeout=20, verbose=0))
+    agents.append(TestAgent(connections[i]))
 
   while True:
     # Read the state of the game then replies with an action.
