@@ -14,7 +14,7 @@ BUG: only the first slot can be human.
 def main():
   # Creates or reuse a Towerfall game.
   towerfall = Towerfall(
-    verbose = 1,
+    verbose = 0,
     config = dict(
       mode='versus',
       level=str(random.randint(0, 10)),

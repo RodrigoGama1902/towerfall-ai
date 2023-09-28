@@ -12,6 +12,8 @@ from common.utils import (
     get_distance_from_point,
 )
 
+from common.pathfinder import PathFinder
+
 class TestAgent:
   '''
   A minimal implementation of an agent that shows how to communicate with the game.
@@ -23,6 +25,9 @@ class TestAgent:
   params connection: A connection to a Towerfall game.
   params attack_archers: If True, the agent will attack other neutral archers.
   '''
+
+  pathfinder : PathFinder
+
   def __init__(self, connection: Connection, attack_archers: bool = False):
     self.state_init: Mapping[str, Any] = {}
     self.state_scenario: Mapping[str, Any] = {}
@@ -30,7 +35,9 @@ class TestAgent:
     self.pressed = set()
     self.connection = connection
     self.attack_archers = attack_archers
+
     self.last_action = None
+    self.pathfinder = PathFinder()
 
   def _log_action(self, action : str):
 
@@ -58,6 +65,7 @@ class TestAgent:
       # 'scenario' informs your bot about the current state of the ground. Store this information
       # to use in all subsequent loops. (This example bot doesn't use the shape of the scenario)
       self.state_scenario = game_state
+      self.pathfinder.update_grid(game_state['grid'])
       # Acknowledge the scenario message.
       self.connection.send_json(dict(type='result', success=True))
       return
@@ -90,6 +98,7 @@ class TestAgent:
 
     players = []
     arrows = []
+
 
     for state in self.state_update['entities']:
 
@@ -132,6 +141,12 @@ class TestAgent:
 
     enemy_pos = enemy_state['pos']
     enemy_distance = self._get_distance_to(enemy_pos['x'], enemy_pos['y'])
+
+    self.pathfinder.set_target(int(enemy_pos['x'] / self.state_scenario['cellSize']), int(enemy_pos['y'] / self.state_scenario['cellSize']))
+    self.pathfinder.set_origin(int(self.my_pos['x'] / self.state_scenario['cellSize']), int(self.my_pos['y'] / self.state_scenario['cellSize']))
+    self.pathfinder.display()
+
+    return self.send_actions()
     
     if not my_state["arrows"]:
       if enemy_distance < 30 and enemy_pos['y'] >= self.my_pos['y'] + 10 and self._is_heading_towards_me(
@@ -368,7 +383,7 @@ class TestAgent:
       if random.randint(0, fail_chance) == 0:
         self.press('s')
       else:
-        print("failed to shoot")
+        self._log_action("failed to shoot")
     else:
       self._log_action('could not shoot, no arrows left')
 

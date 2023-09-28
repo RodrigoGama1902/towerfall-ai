@@ -1,0 +1,11 @@
+[tool.pyright]
+include = [""]
+
+reportMissingImports = true
+reportMissingTypeStubs = false
+reportGeneralTypeIssues = true
+reportOptionalMemberAccess = true
+reportOptionalSubscript = true
+
+pythonVersion = "3.11"
+pythonPlatform = "Windows"
