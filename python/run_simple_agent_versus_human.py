@@ -2,6 +2,8 @@ from agents import TestAgent
 from common.logging_options import default_logging
 from towerfall import Towerfall
 
+import random
+
 default_logging()
 
 '''
@@ -15,7 +17,7 @@ def main():
     verbose = 1,
     config = dict(
       mode='versus',
-      level='1',
+      level=str(random.randint(0, 10)),
       fps=60,
       agentTimeout='00:00:02',
       agents=[
