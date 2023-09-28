@@ -127,6 +127,7 @@ class TestAgent:
       self.send_actions()
       return
     
+    self.my_state = my_state
     self.my_pos = my_state['pos']
 
     enemy_pos = enemy_state['pos']
@@ -145,6 +146,7 @@ class TestAgent:
      
     # Defend against shooting arrows
     for arrow in arrows:
+      
       if arrow["state"] == "shooting" or arrow["state"] == "gravity":     
         if not self._is_heading_towards_me(
           arrow['pos']['x'], 
@@ -153,10 +155,23 @@ class TestAgent:
           arrow['vel']['y']):
           continue
 
-        if arrow["arrowType"] == "bomb" and self._get_distance_to(arrow['pos']['x'], arrow['pos']['y']) > 20:
-          self._log_action('fleeing from shooting bomb arrow')
-          self._flee_from_point(arrow['pos']['x'], arrow['pos']['y'], use_dash= True)
-          return self.send_actions()
+
+        arrow_distance = self._get_distance_to(arrow['pos']['x'], arrow['pos']['y'])
+        if arrow_distance > 25 and arrow_distance < 100 and my_state["arrows"]: 
+            self._log_action('shooting towards arrow')
+            self._go_towards_point(arrow['pos']['x'], arrow['pos']['y'], use_dash= False)
+            self._shoot(fail_chance=3)
+            return self.send_actions()
+        
+        if arrow_distance < 25:
+          if not my_state["state"] in ("dodging", "ledgeGrab"):
+            self._log_action('dodging towards arrow')
+            self._go_towards_point(arrow['pos']['x'], arrow['pos']['y'], use_dash= True)
+
+          if arrow["arrowType"] == "bomb" and self._get_distance_to(arrow['pos']['x'], arrow['pos']['y']) > 20:
+            self._log_action('fleeing from shooting bomb arrow')
+            self._flee_from_point(arrow['pos']['x'], arrow['pos']['y'], use_dash= True)
+            return self.send_actions()
       
       if arrow["state"] == "stuck":
         if arrow["arrowType"] == "bomb":
@@ -168,31 +183,20 @@ class TestAgent:
             self._log_action('dashing towards stuck bomb arrow')
             self._go_towards_point(arrow['pos']['x'], arrow['pos']['y'], use_dash= True)
             return self.send_actions()
-         
-      arrow_distance = self._get_distance_to(arrow['pos']['x'], arrow['pos']['y'])
-      if arrow_distance < 20:
-
-        self._log_action('dashing towards arrow')
-        self._go_towards_point(arrow['pos']['x'], arrow['pos']['y'], use_dash= True)
-
-        return self.send_actions()
-        
+             
 
     if my_state["arrows"]:
       self._log_action('going towards enemy')
       self._go_towards_point(enemy_pos['x'], enemy_pos['y'], allow_vertical= False)
 
       if enemy_distance < 100:
-
-        self._log_action('shooting enemy')
         if self.is_clear_path(enemy_pos['x'], enemy_pos['y']):
-          if random.randint(0, 3) == 0:
-              self.press('s')
+          self._shoot()
         else:
           self._log_action('blocked')
 
     else:
-      closest_stuck_arrow = self._find_closest_stuck_arrow(arrows)
+      closest_stuck_arrow = self._find_closest_available_arrow(arrows)
       if closest_stuck_arrow:
         self._log_action('no arrows left, going towards stuck arrow')
         self._go_towards_point(closest_stuck_arrow['pos']['x'], closest_stuck_arrow['pos']['y'], use_dash= False)
@@ -298,11 +302,11 @@ class TestAgent:
       if use_dash:
         self.press('z')
       
-  def _find_closest_stuck_arrow(self, arrows):
+  def _find_closest_available_arrow(self, arrows):
 
       for arrow in arrows:
 
-          if not arrow["state"] == "stuck":
+          if arrow["state"] == "shooting" or arrow["state"] == "gravity":  
               continue
 
           arrow_x_distance = abs(arrow['pos']['x'] - self.my_pos['x'])
@@ -358,6 +362,15 @@ class TestAgent:
     # If the loop finishes, there is a clear path
     return True
 
+  def _shoot(self, fail_chance = 3):
+    if self.my_state["arrows"]:
+      self._log_action('shooting')
+      if random.randint(0, fail_chance) == 0:
+        self.press('s')
+      else:
+        print("failed to shoot")
+    else:
+      self._log_action('could not shoot, no arrows left')
 
   def press(self, b):
     self.pressed.add(b)

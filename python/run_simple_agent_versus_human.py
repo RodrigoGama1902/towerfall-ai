@@ -15,7 +15,7 @@ def main():
     verbose = 1,
     config = dict(
       mode='versus',
-      level='8',
+      level='1',
       fps=60,
       agentTimeout='00:00:02',
       agents=[
