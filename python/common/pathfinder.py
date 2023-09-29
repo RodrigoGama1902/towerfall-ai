@@ -101,19 +101,20 @@ class Grid:
         if not self._is_in_bounds(x, new_y):
             return None
         return self._tiles[x][y+1]
-
+  
+       
 class PathFinder:
 
     _grid : Grid
 
-    _last_target_position : tuple[int, int]
-    _last_origin_position : tuple[int, int]
+    _target : tuple[int, int]
+    _origin : tuple[int, int]
 
     last_displayed_grid : Grid
 
     def __init__(self):
-        self._last_target_position = (0, 0)
-        self._last_origin_position = (0, 0)
+        self._target = (-1, -1)
+        self._origin = (-1, -1)
         self._grid = Grid([])
         self.last_displayed_grid = Grid([])
 
@@ -123,16 +124,16 @@ class PathFinder:
         self.set_target(x, y)
 
     def set_origin(self, x, y):
-        if self._last_origin_position:
-            self._grid.set_tile(*self._last_origin_position, Tile.EMPTY)
+        if self._origin:
+            self._grid.set_tile(*self._origin, Tile.EMPTY)
         self._grid.set_tile(x, y, Tile.PATHORIGIN)
-        self._last_origin_position = (x, y)
+        self._origin = (x, y)
 
     def set_target(self, x, y):
-        if self._last_target_position:
-            self._grid.set_tile(*self._last_target_position, Tile.EMPTY)
+        if self._target:
+            self._grid.set_tile(*self._target, Tile.EMPTY)
         self._grid.set_tile(x, y, Tile.PATHTARGET)
-        self._last_target_position = (x, y)
+        self._target = (x, y)
 
     def _generate_floor_areas(self):
 
@@ -173,22 +174,78 @@ class PathFinder:
 
     def _generate_base_path(self):
 
-        if not self._last_origin_position or not self._last_target_position:
+        if not self._origin or not self._target:
             return
+        
+        target_x, target_y = self._target
+        max_interations = 100
 
-        origin_x, origin_y = self._last_origin_position
-        target_x, target_y = self._last_target_position
+        while (target_x, target_y) != self._origin: 
 
-        nearest_target_floor = None
-        current_y = target_y
+            if max_interations <= 0:
+                break
 
-        while not nearest_target_floor:
-            tile = self._grid.get_tile(target_x, current_y)
-            if tile == Tile.PATHFLOOR:
-                nearest_target_floor = (target_x, current_y)
-            current_y += 1
+            bellow = self._grid.get_tile_below(target_x, target_y)
+            if bellow in (Tile.EMPTY,Tile.PATHORIGIN):
+                target_y -= 1
+                bellow = self._grid.get_tile_below(target_x, target_y)
+                self._grid.set_tile(target_x, target_y, Tile.PATHUP)
+                continue
 
-        self._grid.set_tile(*nearest_target_floor, Tile.PATHUP)
+            if target_x > self._origin[0]:
+                left = self._grid.get_tile_left(target_x, target_y)
+                if left in (Tile.EMPTY, Tile.PATHORIGIN):
+                    
+                    blocked = False
+                    temp_y = target_y
+                    while temp_y <= self._origin[1]:
+                        checking_block = self._grid.get_tile(target_x - 1, temp_y)
+                        if checking_block in (Tile.WALL, Tile.PATHWALL, Tile.PATHCORNER, Tile.PATHFLOOR):
+                            blocked = True
+                            break
+                        temp_y += 1
+
+                    if not blocked:
+                        target_x -= 1
+                        left = self._grid.get_tile_left(target_x, target_y)
+                        self._grid.set_tile(target_x, target_y, Tile.PATHRIGHT)
+                        continue
+                
+                up = self._grid.get_tile_above(target_x, target_y)
+                if up in (Tile.EMPTY, Tile.PATHORIGIN):
+                    
+                    blocked = False
+                    temp_y = target_y
+                    while temp_y <= self._origin[1]:
+                        checking_block = self._grid.get_tile(target_x + 1, temp_y)
+                        if checking_block in (Tile.WALL, Tile.PATHWALL, Tile.PATHCORNER, Tile.PATHFLOOR):
+                            blocked = True
+                            break
+                        temp_y += 1
+
+                    if not blocked:
+                        target_y += 1
+                        up = self._grid.get_tile_above(target_x, target_y)
+                        self._grid.set_tile(target_x, target_y, Tile.PATHDOWN)
+                        continue
+            else:
+                right = self._grid.get_tile_right(target_x, target_y)
+                if right in (Tile.EMPTY, Tile.PATHORIGIN):
+                    target_x += 1
+                    right = self._grid.get_tile_right(target_x, target_y)
+                    self._grid.set_tile(target_x, target_y, Tile.PATHLEFT)
+                    continue
+                up = self._grid.get_tile_above(target_x, target_y)
+                if up in (Tile.EMPTY, Tile.PATHORIGIN):
+                    target_y += 1
+                    up = self._grid.get_tile_above(target_x, target_y)
+                    self._grid.set_tile(target_x, target_y, Tile.PATHDOWN)
+                    continue
+
+            max_interations -= 1
+
+    def update_path(self):
+        self._generate_base_path()
              
     def update_grid(self, grid_data):
         self._grid = Grid(grid_data)
@@ -197,7 +254,7 @@ class PathFinder:
         self._generate_corner_climb_areas()
         self._generate_wall_climb_areas()
 
-        #self._generate_base_path()
+        self._generate_base_path()
 
     def display(self):
 
