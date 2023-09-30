@@ -16,6 +16,7 @@ def test_simple_display(start_space):
     pathfinder.start_scene(LEVEL1)
     pathfinder.set_origin(*LEVEL1_ORIGIN)
     pathfinder.set_target(*LEVEL1_TARGET)
+    pathfinder.update_path()
 
     display = ShowPathFinder(pathfinder)
     display.show()

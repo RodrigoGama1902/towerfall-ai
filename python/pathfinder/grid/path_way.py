@@ -3,6 +3,12 @@ from .base import Grid, Tile
 
 class PathWay(Grid):
 
+    def set_target(self, x, y):
+        self.set(x, y, Tile.PATHTARGET)
+
+    def set_origin(self, x, y):
+        self.set(x, y, Tile.PATHORIGIN)
+
     def _get_tiles(self, grid_data):
 
         tiles : list[list[Tile]] = []

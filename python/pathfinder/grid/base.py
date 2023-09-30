@@ -18,7 +18,7 @@ class Tile(Enum):
     PATHORIGIN = BlockRepr('OO', (0, 255, 0))
     PATHTARGET = BlockRepr('XX', (255, 0, 0))
 
-    PATHNODE = BlockRepr("[]",(255, 255, 255))
+    PATHNODE = BlockRepr("[]",(255, 255, 0))
 
     PATHUP = BlockRepr("^^",(255, 255, 255))
     PATHDOWN = BlockRepr("vv",(255, 255, 255))

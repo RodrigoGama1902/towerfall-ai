@@ -55,9 +55,15 @@ class PathScene(Grid):
                         self.set(i, j, Tile.PATHCORNER)
                         continue
 
-    def create_path_nodes(self):
+    def get_path_ancors(self):
+
+        path_ancors : list[tuple[int, int]] = []
 
         for i in range(len(self._grid)):
             for j in range(len(self._grid[0])):
-                if self._grid[i][j] in (Tile.PATHFLOOR, Tile.PATHCORNER):
+                if self._grid[i][j] == Tile.PATHCORNER:
+                    path_ancors.append((i, j + 1))
                     self.set(i, j + 1, Tile.PATHNODE)
+
+        return path_ancors
+

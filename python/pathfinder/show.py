@@ -200,6 +200,49 @@ class ShowPathFinder:
 
         self._screen.blit(text_surface, text_rect)
 
+    def _get_grid_coords_to_window_coords(self, x, y):
+        return x * self._block_size, abs(y * self._block_size - self._window_height) - 1
+    
+    def _get_window_coords_to_grid_coords(self, x, y):
+        return int(x / self._block_size), abs(int(y / self._block_size) - self._grid_height) - 1
+
+    def _draw_path_points(self):
+
+        last_point = None
+        node_count = 0
+
+        for point in self._pathfinder.path_points:
+            if not last_point:
+                last_point = self._get_grid_coords_to_window_coords(point.x, point.y)
+                last_point = (
+                    last_point[0] + self._block_size / 2, 
+                    last_point[1] - self._block_size / 2) # center the point
+                continue
+
+            current_point = self._get_grid_coords_to_window_coords(point.x, point.y)
+            current_point = (
+                current_point[0] + self._block_size / 2, 
+                current_point[1] - self._block_size / 2)
+
+            pygame.draw.line(
+                self._screen, 
+                (255, 255, 255), 
+                last_point,
+                current_point,
+                5
+            )
+
+            
+            last_point = current_point
+
+            #draw node count test on the last point
+            text_surface = self._font.render(str(node_count), True, (255, 0, 0))
+            text_rect = text_surface.get_rect()
+            text_rect.center = last_point[0] - 20, last_point[1] - 20
+            self._screen.blit(text_surface, text_rect)
+
+            node_count += 1
+
     def show(self):
 
         line_measure = LineMeasure(block_size=self._block_size)
@@ -212,27 +255,40 @@ class ShowPathFinder:
                     running = False
                 # Draw line event
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if event.button == 1:  # Left mouse button clicked
-                        
+
+                    # middle mouse
+                    if event.button == 2:
                         line_measure.drawing = True
                         line_measure.start_pos = event.pos
                         line_measure.end_pos = event.pos
+
+                    if event.button == 1:
+                        self._pathfinder.set_origin(*self._get_mouse_grid_tile_coords())
+                        self._pathfinder.update_path()
+
+                    if event.button == 3:
+                        self._pathfinder.set_target(*self._get_mouse_grid_tile_coords())
+                        self._pathfinder.update_path()
                         
                 elif event.type == pygame.MOUSEMOTION:
                     if line_measure.drawing:
                         line_measure.end_pos = event.pos
 
                 elif event.type == pygame.MOUSEBUTTONUP:
-                    if event.button == 1:  # Left mouse button released
+                    if event.button == 2:  # Left mouse button released
                         line_measure.drawing = False
             
                 if line_measure.drawing:
                     line_measure.update(event.pos)
 
             self._screen.fill((0, 0, 0))
+
             self._draw_grid(self._tiles_grid)
+            self._draw_grid(self._path_way.grid(horizontal=True))
+
             self._draw_grid_lines()
             self._draw_cursor_text()
+            self._draw_path_points()
 
             # Draw the line
             line_measure.draw(self._screen)
