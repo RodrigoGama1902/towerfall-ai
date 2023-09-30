@@ -94,9 +94,7 @@ class ShowPathFinder:
             )
 
         # draw a rect on the cursor block position
-        mouse_x, mouse_y = pygame.mouse.get_pos()
-        tile_coord_x = int(mouse_x / self._block_size)
-        tile_coord_y = (int(mouse_y / self._block_size))
+        tile_coord_x, tile_coord_y = self._get_mouse_tile_coords()
 
         pygame.draw.rect(
             self._screen, 
@@ -107,15 +105,29 @@ class ShowPathFinder:
                 self._block_size)
         )
 
+    def _get_mouse_grid_tile_coords(self):
+        '''Get mouse position in relation to the grid (The Y is vertically inverted)'''
+            
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        tile_coord_x = int(mouse_x / self._block_size)
+        tile_coord_y = abs(int(mouse_y / self._block_size) - self._grid_height) - 1
 
+        return tile_coord_x, tile_coord_y
+    
+    def _get_mouse_tile_coords(self):
+        '''Get mouse position in relation to the grid with window coordinates'''
+
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        tile_coord_x = int(mouse_x / self._block_size)
+        tile_coord_y = (int(mouse_y / self._block_size))
+
+        return tile_coord_x, tile_coord_y
 
     def _draw_cursor_text(self):
 
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
-        tile_coord_x = int(mouse_x / self._block_size)
-        tile_coord_y = abs(int(mouse_y / self._block_size) - self._grid_height) - 1
-
+        tile_coord_x, tile_coord_y = self._get_mouse_grid_tile_coords()
         self._draw_text(f"({tile_coord_x}, {tile_coord_y})", mouse_x, mouse_y)
 
     def show(self):
