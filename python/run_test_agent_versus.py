@@ -14,12 +14,12 @@ def main():
     verbose = 0,
     config = dict(
       mode='versus',
-      level='',
+      level='3',
       fps=60,
       agentTimeout='00:00:02',
       agents=[
-        dict(type='remote', archer='green-alt', team='blue'),
-        dict(type='remote', archer='red-alt', team='red')],
+        dict(type='remote', archer='red', team='blue'),
+        dict(type='remote', archer='white', team='red')],
     )
   )
 
@@ -31,7 +31,7 @@ def main():
   agents.append(SimpleAgent(connections[0]))
 
   connections.append(towerfall.join(timeout=10, verbose=0))
-  agents.append(SimpleAgent(connections[1]))
+  agents.append(TestAgent(connections[1]))
 
 
   while True:

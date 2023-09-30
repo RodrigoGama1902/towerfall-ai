@@ -2,8 +2,6 @@ import logging
 import random
 import math
 
-from pprint import pprint
-
 from typing import Any, Mapping
 
 from towerfall import Connection
@@ -11,9 +9,6 @@ from towerfall import Connection
 from common.utils import (
     get_distance_from_point,
 )
-
-from common.pathfinder import PathFinder
-
 class TestAgent:
   '''
   A minimal implementation of an agent that shows how to communicate with the game.
@@ -26,8 +21,6 @@ class TestAgent:
   params attack_archers: If True, the agent will attack other neutral archers.
   '''
 
-  pathfinder : PathFinder
-
   def __init__(self, connection: Connection, attack_archers: bool = False):
     self.state_init: Mapping[str, Any] = {}
     self.state_scenario: Mapping[str, Any] = {}
@@ -37,12 +30,11 @@ class TestAgent:
     self.attack_archers = attack_archers
 
     self.last_action = None
-    self.pathfinder = PathFinder()
 
   def _log_action(self, action : str):
 
     if action != self.last_action:
-      logging.info(action)
+      #logging.info(action)
       self.last_action = action
 
   def act(self, game_state: Mapping[str, Any]):
@@ -65,7 +57,6 @@ class TestAgent:
       # 'scenario' informs your bot about the current state of the ground. Store this information
       # to use in all subsequent loops. (This example bot doesn't use the shape of the scenario)
       self.state_scenario = game_state
-      self.pathfinder.update_grid(game_state['grid'])
       # Acknowledge the scenario message.
       self.connection.send_json(dict(type='result', success=True))
       return
@@ -142,24 +133,60 @@ class TestAgent:
     enemy_pos = enemy_state['pos']
     enemy_distance = self._get_distance_to(enemy_pos['x'], enemy_pos['y'])
 
-    self.pathfinder.update_grid(self.state_scenario['grid'])
-    self.pathfinder.set_target(int(enemy_pos['x'] / self.state_scenario['cellSize']), int(enemy_pos['y'] / self.state_scenario['cellSize']))
-    self.pathfinder.set_origin(int(self.my_pos['x'] / self.state_scenario['cellSize']), int(self.my_pos['y'] / self.state_scenario['cellSize']))
-    self.pathfinder.display()
 
-    return self.send_actions()
-    
-    if not my_state["arrows"]:
-      if enemy_distance < 30 and enemy_pos['y'] >= self.my_pos['y'] + 10 and self._is_heading_towards_me(
-        enemy_pos['x'], 
-        enemy_pos['y'], 
-        enemy_state['vel']['x'], 
-        enemy_state['vel']['y']): 
-      
-        self._log_action('fleeing from enemy jump, no arrows')
-        self._flee_from_point(enemy_pos['x'], enemy_pos['y'], allow_vertical= False, use_dash= True)
+    #self.pathfinder.set_target(int(enemy_pos['x'] / self.state_scenario['cellSize']), int(enemy_pos['y'] / self.state_scenario['cellSize']))
+    #self.pathfinder.set_origin(int(self.my_pos['x'] / self.state_scenario['cellSize']), int(self.my_pos['y'] / self.state_scenario['cellSize']))
+    #self.pathfinder.display()
+
+    #if not my_state["arrows"]:
+    if enemy_distance < 30 and enemy_pos['y'] >= self.my_pos['y'] + 10 and self._is_heading_towards_me(
+      enemy_pos['x'], 
+      enemy_pos['y'], 
+      enemy_state['vel']['x'], 
+      enemy_state['vel']['y']): 
+
+      if not self.is_clear_path(self.my_pos['x'] - 20, self.my_pos['y'] -10):
+        self._log_action('fleeing from enemy jump, blocked, going right')
+        self._flee_from_point(
+          enemy_pos['x'], 
+          enemy_pos['y'], 
+          allow_right= True,
+          allow_left= False,
+          allow_vertical= False,  
+          use_dash= True)
         return self.send_actions()
-     
+      
+      if not self.is_clear_path(self.my_pos['x'] + 20, self.my_pos['y'] -10):
+        self._log_action('fleeing from enemy jump, blocked, going left')
+        self._flee_from_point(
+          enemy_pos['x'], 
+          enemy_pos['y'], 
+          allow_left= True,
+          allow_right= False,
+          allow_vertical= False,  
+          use_dash= True)
+        return self.send_actions()
+
+      if enemy_pos['x'] > self.my_pos['x']: # Enemy is more to the right
+        self._log_action('fleeing from enemy jump, left')
+        self._flee_from_point(
+          enemy_pos['x'], 
+          enemy_pos['y'], 
+          allow_right= False,
+          allow_vertical= False,  
+          use_dash= True)
+
+      else: # Enemy is more to the left
+        self._log_action('fleeing from enemy jump, no arrows')
+        self._flee_from_point(
+          enemy_pos['x'], 
+          enemy_pos['y'], 
+          allow_left = False,
+          allow_vertical= False, 
+          use_dash= True)
+      
+      return self.send_actions()
+    
     # Defend against shooting arrows
     for arrow in arrows:
       
@@ -170,7 +197,6 @@ class TestAgent:
           arrow['vel']['x'], 
           arrow['vel']['y']):
           continue
-
 
         arrow_distance = self._get_distance_to(arrow['pos']['x'], arrow['pos']['y'])
         if arrow_distance > 25 and arrow_distance < 80 and my_state["arrows"]: 
@@ -217,8 +243,8 @@ class TestAgent:
         self._log_action('no arrows left, going towards stuck arrow')
         self._go_towards_point(closest_stuck_arrow['pos']['x'], closest_stuck_arrow['pos']['y'], use_dash= False)
       else:
-        self._log_action('no arrows left, fleeing from enemy')
-        self._flee_from_point(enemy_pos['x'], enemy_pos['y'])
+        self._log_action('no arrows left, kamikase the enemy')
+        self._go_towards_point(enemy_pos['x'], enemy_pos['y'])
 
     # Randomly jumps
     if random.randint(0, 19) == 0:
@@ -229,7 +255,7 @@ class TestAgent:
   
   def _is_heading_towards_me(self, target_x, target_y, vel_x, vel_y) -> bool:
      
-    target_to_my_pos = (self.my_pos['x'] - target_x, self.my_pos['y'] - target_y)
+    target_to_my_pos = (self.my_pos['x'] - target_x, self.my_pos['y'] - target_y) 
     dot_product = target_to_my_pos[0] * vel_x + target_to_my_pos[1] * vel_y
 
     return dot_product > 0
@@ -259,7 +285,8 @@ class TestAgent:
       target_x, 
       target_y, 
       allow_vertical = True, 
-      use_dash = False):
+      use_dash = False,
+      ):
 
       snap_value_angle = self._get_snap_direction_angle_to(target_x, target_y)
 
@@ -290,7 +317,12 @@ class TestAgent:
 
   def _flee_from_point(
       self, 
-      target_x, target_y, allow_vertical = True, use_dash = False):
+      target_x, 
+      target_y, 
+      allow_vertical = True, 
+      allow_left = True,
+      allow_right = True,
+      use_dash = False):
 
       snap_value_angle = self._get_snap_direction_angle_to(target_x, target_y)
 
@@ -305,11 +337,31 @@ class TestAgent:
         180: ['r']
       }
 
-      if not allow_vertical:
+      if not allow_left:
         key_presses.update({
-            -90: ['r'],
-            90: ['l']
+            0: ['r'],
+            45: ['r', 'u'],
+            -45: ['r', 'd']
         })
+
+      if not allow_right:
+        key_presses.update({
+            180: ['l'],
+            135: ['l', 'd'],
+            -135: ['l', 'u']
+        })
+
+      if not allow_vertical:
+        if not allow_left:
+          key_presses.update({
+              -90: ['r'],
+              90: ['r']
+          })
+        if not allow_right:
+          key_presses.update({
+              -90: ['l'],
+              90: ['l']
+          })
 
       directions = key_presses.get(snap_value_angle, [])
       for direction in directions:
@@ -369,7 +421,7 @@ class TestAgent:
             return False
         if y < 0 or y >= len(scenario_grid[0]):
             return False
-        if scenario_grid[int(x)][int(y)] == 1:
+        if scenario_grid[int(x)][int(y)] == 1: 
             return False  # There is a collision, not a clear path
         # Move the ray to the next cell
         x += dx

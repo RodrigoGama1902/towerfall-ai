@@ -22,9 +22,8 @@ def main():
       agentTimeout='00:00:02',
       agents=[
         dict(type='human', archer='orange', team='red'),
-        dict(type='remote', archer='white', team='blue'),]
-        #dict(type='remote', archer='green', team='blue'),
-        #dict(type='remote', archer='red', team='blue')],
+        dict(type='remote', archer='white', team='blue'),
+      ],
     )
   )
 
