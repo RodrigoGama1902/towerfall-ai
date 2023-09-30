@@ -55,7 +55,7 @@ class PathFinder:
         self._pathscene.generate_floor_areas()
         self._pathscene.generate_corner_climb_areas()
         self._pathscene.generate_wall_climb_areas()
-        #self._pathscene.create_path_nodes()
+        self._pathscene.create_path_nodes()
        
     def display(self):
         

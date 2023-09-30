@@ -1,5 +1,6 @@
 import pygame
 import sys
+import math
 
 from .grid import (
     Tile
@@ -12,6 +13,79 @@ from .grid import (
 
 from .pathfinder import PathFinder
 
+# Function to calculate distance between two points
+def calculate_distance(point1, point2):
+    return math.sqrt((point2[0] - point1[0])**2 + (point2[1] - point1[1])**2)
+
+
+class LineMeasure:
+
+    _font : pygame.font.Font
+
+    _drawing: bool
+    _start_pos : tuple[int, int]
+    _end_pos : tuple[int, int]
+    _distance : int
+    _distance_text : None | pygame.Surface
+    _block_size : float
+
+    def __init__(
+            self, 
+            block_size : float,
+            font_size= 24, 
+            line_color : tuple[int, int, int] = (255, 0, 0),
+            line_width : int = 2,
+            ):
+        
+        self._drawing = False
+        self._start_pos = (0,0)
+        self._end_pos = (0,0)
+        self._line_color = line_color
+        self._line_width = line_width
+        self._block_size = block_size
+        self._distance_text = None
+
+        self._font = pygame.font.Font(None, font_size)
+
+    def draw(self, screen):
+        if self._start_pos and self._end_pos:
+            pygame.draw.line(screen, self._line_color, self._start_pos, self._end_pos, self._line_width)
+
+        if self._distance_text:
+            text_rect = self._distance_text.get_rect(center=self._midpoint)
+            screen.blit(self._distance_text, text_rect)
+
+    def update(self, event_pos):
+        
+        self._end_pos = event_pos
+        self._distance = int(calculate_distance(self._start_pos, self._end_pos))
+        self._midpoint = ((self._start_pos[0] + self._end_pos[0]) // 2, (self._start_pos[1] + self._end_pos[1]) // 2)
+        self._distance_text = self._font.render(str(round(self._distance / self._block_size)) + " blocks", True, self._line_color)
+
+    @property
+    def start_pos(self):
+        return self._start_pos
+    
+    @start_pos.setter
+    def start_pos(self, value):
+        self._start_pos = value
+
+    @property
+    def end_pos(self):
+        return self._end_pos
+    
+    @end_pos.setter
+    def end_pos(self, value):
+        self._end_pos = value
+
+    @property
+    def drawing(self):
+        return self._drawing
+    
+    @drawing.setter
+    def drawing(self, value):
+        self._drawing = value
+
 class ShowPathFinder:
 
     _pathfinder : PathFinder
@@ -21,6 +95,8 @@ class ShowPathFinder:
     _tiles_grid : list[list[Tile]]
     _grid_height : int
     _grid_width : int
+
+    _font : pygame.font.Font
 
     def __init__(
             self, 
@@ -39,25 +115,14 @@ class ShowPathFinder:
         self._window_height = self._grid_height * self._scale_multiplier
 
         self._block_size = (self._window_width / self._grid_width)
-
+        
         pygame.init()
         self._screen = pygame.display.set_mode((self._window_width, self._window_height))
         pygame.display.set_caption("Grid Scenery")
-    
-    def _draw_text(self, text, x, y):
 
-        # Render the text
-        FONT_SIZE = 24
-        FONT_COLOR = (255, 255, 255)
-
-        font = pygame.font.Font(None, FONT_SIZE)
-
-        text_surface = font.render(text, True, FONT_COLOR)
-        text_rect = text_surface.get_rect()
-        text_rect.center = (x, y)
-
-        # Draw the text on the screen
-        self._screen.blit(text_surface, text_rect)
+        self._font_size = 24
+        self._font = pygame.font.Font(None, self._font_size)
+            
 
     def _draw_grid(self, grid):
         for y, row in enumerate(grid):
@@ -128,22 +193,49 @@ class ShowPathFinder:
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
         tile_coord_x, tile_coord_y = self._get_mouse_grid_tile_coords()
-        self._draw_text(f"({tile_coord_x}, {tile_coord_y})", mouse_x, mouse_y)
+
+        text_surface = self._font.render(f"({tile_coord_x}, {tile_coord_y})", True, (255, 255, 255))
+        text_rect = text_surface.get_rect()
+        text_rect.center = (mouse_x, mouse_y)
+
+        self._screen.blit(text_surface, text_rect)
 
     def show(self):
 
+        line_measure = LineMeasure(block_size=self._block_size)
+        
         # Main game loop
         running = True
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                # Draw line event
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == 1:  # Left mouse button clicked
+                        
+                        line_measure.drawing = True
+                        line_measure.start_pos = event.pos
+                        line_measure.end_pos = event.pos
+                        
+                elif event.type == pygame.MOUSEMOTION:
+                    if line_measure.drawing:
+                        line_measure.end_pos = event.pos
+
+                elif event.type == pygame.MOUSEBUTTONUP:
+                    if event.button == 1:  # Left mouse button released
+                        line_measure.drawing = False
+            
+                if line_measure.drawing:
+                    line_measure.update(event.pos)
 
             self._screen.fill((0, 0, 0))
             self._draw_grid(self._tiles_grid)
             self._draw_grid_lines()
             self._draw_cursor_text()
 
+            # Draw the line
+            line_measure.draw(self._screen)
             pygame.display.flip()
 
         # Quit Pygame
